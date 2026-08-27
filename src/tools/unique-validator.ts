@@ -5,6 +5,7 @@
 // Lives under tools/ to keep it separate from the runtime human-logic packages (§75).
 import type { BoardState } from "../types.js";
 import { getPeers } from "../grid.js";
+import { findConflicts } from "../board.js";
 
 /** Solve as an integer array (0 = empty). Counts solutions up to `limit`. */
 function countSolutions(cells: number[], limit: number): { count: number; first: number[] | null } {
@@ -51,10 +52,22 @@ function countSolutions(cells: number[], limit: number): { count: number; first:
 export type UniquenessResult =
   | { status: "unique"; solution: number[] }
   | { status: "no-solution" }
-  | { status: "multiple" };
+  | { status: "multiple" }
+  | { status: "invalid-givens"; conflicts: number[] };
 
-/** §15.1 Prove a puzzle has exactly one solution. */
+/**
+ * §15.1 Prove a puzzle has exactly one solution.
+ *
+ * Medium-1 fix (Gate Review): the backtracking search only reasons about EMPTY cells
+ * and never cross-checks already-placed values, so a board that is itself illegal
+ * (e.g. two identical values in a row) could be reported as "unique". Callers that
+ * build BoardState directly (e.g. a future puzzle generator, PRD §75) may not pass
+ * through parsePuzzle's conflict guard. We therefore reject conflicting boards up
+ * front instead of letting them enter the search.
+ */
 export function checkUniqueness(board: BoardState): UniquenessResult {
+  const conflicts = findConflicts(board);
+  if (conflicts.length > 0) return { status: "invalid-givens", conflicts };
   const cells = board.map((c) => c.value ?? 0);
   const { count, first } = countSolutions(cells, 2);
   if (count === 0) return { status: "no-solution" };
