@@ -10,7 +10,7 @@
 | repo | https://github.com/ShouheiTiger/neko-sudoku-web |
 | branch | `feature/m2-gameplay-assistance` |
 | base commit SHA（本轮修复前 = Gate 审核 commit） | `ea7eb088077bf365c80bcb7dd2d8fe36a61e8759` |
-| fix commit SHA | `__FIX_SHA__` |
+| fix commit SHA | `f7ac806a887dc2880a8c33f63e02de745eb1cd14` |
 | final branch tip（含本报告 SHA 修订） | 见 push 输出 |
 
 `git diff --name-status ea7eb088...HEAD` 仅涉及 Web/App/Test 文件（见下）。M0 Core `git diff --stat` 为空。
