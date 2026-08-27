@@ -7,8 +7,13 @@ import { z } from "zod";
 
 export const SCHEMA_VERSION_V1 = 1;
 export const SCHEMA_VERSION = 2; // current (M2)
-export const SETTINGS_SCHEMA_VERSION = 1;
+export const SETTINGS_SCHEMA_VERSION_V1 = 1; // M2 settings (errorMode only)
+export const SETTINGS_SCHEMA_VERSION = 2; // M3 settings (+largeText,+tutorialSeen)
+export const HISTORY_SCHEMA_VERSION = 1; // M3 history
 export const ENGINE_VERSION = 1;
+
+/** Max history records retained (M3 §21). Chosen mid-range; documented in M3_REPORT.md. */
+export const HISTORY_LIMIT = 150;
 
 /** Max undo actions retained (M2 §9). Chosen mid-range; documented in M2_REPORT.md. */
 export const UNDO_STACK_LIMIT = 150;
@@ -104,9 +109,37 @@ export const envelopeSchemaV1 = z.object({
   data: activeGameSchemaV1,
 });
 
-// M2 §13 Settings (errorMode). Persisted separately under nekoSudoku.settings.
+// ---- Settings ----
+// M2 v1 settings (errorMode only) — retained as a migration input shape (M3 §14).
+export const settingsSchemaV1 = z.object({
+  schemaVersion: z.literal(SETTINGS_SCHEMA_VERSION_V1),
+  errorMode: errorModeSchema,
+});
+export type SettingsV1 = z.infer<typeof settingsSchemaV1>;
+
+// M3 v2 settings (current): adds largeText + tutorialSeen. Persisted under nekoSudoku.settings.
 export const settingsSchema = z.object({
   schemaVersion: z.literal(SETTINGS_SCHEMA_VERSION),
   errorMode: errorModeSchema,
+  largeText: z.boolean(),
+  tutorialSeen: z.boolean(),
 });
 export type Settings = z.infer<typeof settingsSchema>;
+
+// ---- History (M3 §20-§23) ----
+// Records ONLY date/difficulty/elapsed for display; gameId/puzzleId/completedAt are internal.
+// NEVER stores score / mistakes / hintCount / rating / rank (§21/§23).
+export const historyRecordSchema = z.object({
+  gameId: z.string().min(1),
+  puzzleId: z.string().min(1),
+  difficulty: difficultySchema,
+  completedAt: z.number(),
+  elapsedMs: z.number().min(0),
+});
+export type HistoryRecord = z.infer<typeof historyRecordSchema>;
+
+export const historyEnvelopeSchema = z.object({
+  schemaVersion: z.literal(HISTORY_SCHEMA_VERSION),
+  records: z.array(historyRecordSchema).max(HISTORY_LIMIT),
+});
+export type HistoryEnvelope = z.infer<typeof historyEnvelopeSchema>;

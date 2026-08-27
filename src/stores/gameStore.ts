@@ -12,12 +12,12 @@ import {
   loadActiveGame,
   loadSettings,
   saveSettings,
+  appendHistoryOnce,
 } from "../storage/gameStorage.js";
 import {
   SCHEMA_VERSION,
   ENGINE_VERSION,
   UNDO_STACK_LIMIT,
-  SETTINGS_SCHEMA_VERSION,
   type ActiveGame,
   type GameAction,
   type ErrorMode,
@@ -164,6 +164,16 @@ function commit(
     const stopped = completeTimer(next.timer, now());
     next = { ...next, timer: stopped };
     completedElapsedMs = elapsedMs(stopped, now());
+    // M3 §22 completion order: calc elapsed → append history EXACTLY ONCE → clear activeGame.
+    // appendHistoryOnce is idempotent by gameId and never throws, so repeated completion
+    // commits / rerenders / lifecycle events cannot duplicate or crash (§22/§32).
+    appendHistoryOnce({
+      gameId: next.gameId,
+      puzzleId: next.puzzleId,
+      difficulty: next.difficulty,
+      completedAt: now(),
+      elapsedMs: completedElapsedMs,
+    });
     // FIX-1 (Gate Medium-1): a finished board is NOT an "active game". Clear the persistent
     // activeGame so Home never offers "继续上一局" for a completed board (§7.1 semantics).
     // The in-memory `game` is kept so the completion page can still show 🐱 + elapsed time.
@@ -310,7 +320,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   setErrorMode: (mode) => {
-    saveSettings({ schemaVersion: SETTINGS_SCHEMA_VERSION, errorMode: mode });
+    // Preserve M3 settings (largeText/tutorialSeen) when updating errorMode.
+    const current = loadSettings();
+    saveSettings({ ...current, errorMode: mode });
     set({ errorMode: mode, gentleError: null });
   },
 

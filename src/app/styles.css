@@ -283,3 +283,133 @@ body {
 
 .pad-note .pad-key { border-color: var(--color-accent); color: var(--color-accent); }
 .done-time { font-size: 16px; color: var(--color-text); margin: 4px 0 16px; }
+
+/* ================= M3 additions ================= */
+
+/* ---- Focus visibility (§17/§42) ---- */
+:focus-visible {
+  outline: 3px solid var(--color-primary-strong);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---- Cat companion (§11/§12) — fixed height so state changes never shift layout ---- */
+.cat-companion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 84px; /* reserved space (§12) */
+  margin: 4px 0 8px;
+}
+.cat-companion.cat-large { min-height: 120px; }
+.cat-art { font-size: 40px; line-height: 1; will-change: transform, opacity; }
+.cat-large .cat-art { font-size: 64px; }
+.cat-copy { margin: 0; font-size: 14px; color: var(--color-muted); text-align: center; }
+.home .cat-line { font-size: 16px; }
+
+/* Very light animations only (§12): opacity / small translate / small scale. */
+@keyframes cat-breathe { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes cat-fade { from { opacity: 0.6; } to { opacity: 1; } }
+@keyframes cat-pop { 0% { transform: scale(0.96); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
+.cat-anim-idle { animation: cat-breathe 4s ease-in-out infinite; }
+.cat-anim-thinking { animation: cat-fade 0.4s ease-in; }
+.cat-anim-hinting { animation: cat-fade 0.4s ease-in; }
+.cat-anim-sleeping { opacity: 0.85; }
+.cat-anim-celebrating { animation: cat-pop 0.5s ease-out; }
+
+/* ---- Reduced motion (§12): disable non-essential animation, keep all function ---- */
+@media (prefers-reduced-motion: reduce) {
+  .cat-art,
+  .cat-anim-idle,
+  .cat-anim-thinking,
+  .cat-anim-hinting,
+  .cat-anim-celebrating {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ---- Home nav (§28) ---- */
+.home-nav { display: flex; gap: 18px; justify-content: center; margin-top: 14px; }
+.home-nav .link-btn { min-height: var(--tap); font-size: 15px; }
+
+/* ---- Settings (§13) ---- */
+.settings-group { margin: 14px 0; }
+.settings-title { font-size: 17px; margin: 0 0 4px; }
+.settings-hint { font-size: 13px; color: var(--color-muted); margin: 0 0 10px; }
+.toggle-row {
+  width: 100%; min-height: var(--tap); display: flex; align-items: center;
+  justify-content: space-between; padding: 10px 14px; border-radius: var(--radius);
+  border: 1.5px solid var(--color-grid); background: var(--color-surface);
+  color: var(--color-text); font-size: 16px; font-weight: 600; cursor: pointer;
+}
+.toggle-row.on { border-color: var(--color-accent); }
+.toggle-state { font-size: 14px; color: var(--color-muted); }
+.toggle-row.on .toggle-state { color: var(--color-accent); font-weight: 700; }
+.mode-switch-block { display: flex; width: 100%; }
+.mode-switch-block .mode-opt { flex: 1 1 0; min-height: var(--tap); font-size: 15px; }
+.settings-links { display: flex; gap: 10px; margin-top: 20px; }
+.settings-links .btn { margin: 0; }
+
+/* ---- History (§20/§29) ---- */
+.history-empty { text-align: center; padding: 32px 8px; }
+.history-empty p { margin: 6px 0; }
+.history-list { list-style: none; padding: 0; margin: 8px 0; }
+.history-item {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: baseline;
+  padding: 12px 6px; border-bottom: 1px solid var(--color-grid);
+}
+.history-date { color: var(--color-text); font-size: 15px; }
+.history-diff { color: var(--color-muted); font-size: 13px; }
+.history-time { color: var(--color-primary-strong); font-weight: 700; font-size: 15px; }
+
+/* ---- Help (§27) ---- */
+.help-section { margin: 16px 0; }
+.help-section p { margin: 4px 0 0; font-size: 15px; line-height: 1.6; color: var(--color-text); }
+
+/* ---- Tutorial (§25) ---- */
+.tutorial-screen { text-align: center; padding: 8px 0; }
+.tutorial-text { font-size: 17px; line-height: 1.6; margin: 12px 0; }
+.tutorial-dots { display: flex; gap: 8px; justify-content: center; margin: 8px 0 16px; }
+.tutorial-dots .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-grid); }
+.tutorial-dots .dot.on { background: var(--color-primary); }
+.tutorial-row { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin: 12px 0; }
+.t-cell {
+  min-width: 30px; min-height: 40px; display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--color-grid); border-radius: 8px; font-size: 20px; font-weight: 600;
+  background: var(--color-surface);
+}
+.t-cell.blank { color: var(--color-primary-strong); border-style: dashed; }
+.tutorial-pad { max-width: 360px; margin: 12px auto 0; }
+.done-sub { font-size: 14px; color: var(--color-muted); margin: 4px 0 16px; }
+
+/* ================= Large Text mode (§15/§16/§33) =================
+   Applied via a single root attribute so we never sprinkle `if (largeText)` across
+   components. Scales text-heavy surfaces; the width-driven 9x9 board keeps its geometry
+   (cells stay square) while digit/notes get bolder & slightly larger but bounded. */
+[data-large-text] .btn { font-size: 21px; }
+[data-large-text] .cat-copy { font-size: 17px; }
+[data-large-text] .cat-line { font-size: 19px; }
+[data-large-text] .diff-tag { font-size: 19px; }
+[data-large-text] .link-btn { font-size: 18px; }
+[data-large-text] .tool-label { font-size: 13px; }
+[data-large-text] .tool-icon { font-size: 20px; }
+[data-large-text] .pad-key { font-size: 26px; }
+[data-large-text] .mode-opt { font-size: 15px; }
+[data-large-text] .hint-msg { font-size: 18px; }
+[data-large-text] .settings-title { font-size: 20px; }
+[data-large-text] .settings-hint { font-size: 15px; }
+[data-large-text] .toggle-row { font-size: 18px; }
+[data-large-text] .history-date,
+[data-large-text] .history-time { font-size: 17px; }
+[data-large-text] .history-diff { font-size: 15px; }
+[data-large-text] .help-section p { font-size: 17px; }
+[data-large-text] .tutorial-text { font-size: 20px; }
+[data-large-text] .note-banner { font-size: 15px; }
+[data-large-text] .gentle-toast { font-size: 16px; }
+/* Board digit: bolder + a touch larger, still bounded so it never overflows a cell. */
+[data-large-text] .cell .cell-value { font-weight: 800; font-size: clamp(18px, 6vw, 28px); }
+/* Notes stay a readable 1-9 grid (§16) — bump weight/contrast, never dots. */
+[data-large-text] .cell .note-cell { font-weight: 700; color: var(--color-text); }

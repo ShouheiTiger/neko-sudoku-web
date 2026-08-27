@@ -21,9 +21,11 @@ export function HomePage() {
   }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell home">
       <div className="spacer" />
-      <div className="cat" aria-hidden="true">🐱</div>
+      <div className="cat-companion cat-large">
+        <div className="cat-art" aria-hidden="true">🐱</div>
+      </div>
       <p className="cat-line">
         {hasActive ? "上次那一局还在等你哦。" : "今天也慢慢来吧。"}
       </p>
@@ -41,6 +43,11 @@ export function HomePage() {
           开始一局
         </button>
       )}
+      <nav className="home-nav" aria-label="更多">
+        <button className="link-btn" onClick={() => navigate("/history")}>历史</button>
+        <button className="link-btn" onClick={() => navigate("/settings")}>设置</button>
+        <button className="link-btn" onClick={() => navigate("/tutorial")}>怎么玩</button>
+      </nav>
       <div className="spacer" />
     </main>
   );
