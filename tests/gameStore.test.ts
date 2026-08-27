@@ -9,9 +9,12 @@ const SOLUTIONS: Record<string, string> = Object.fromEntries(
 );
 
 // §31 Store tests: start / select / enter / clear / restore.
+// These M1 tests exercise raw fill behavior (no error-mode concept existed in M1). M2 adds
+// a default "gentle" mode that rejects wrong digits, so we pin these tests to "unchecked"
+// to preserve their original intent of unconditional Core mutation.
 function reset() {
   window.localStorage.clear();
-  useGameStore.setState({ status: "idle", game: null, restoreAttempted: false });
+  useGameStore.setState({ status: "idle", game: null, restoreAttempted: false, errorMode: "unchecked", gentleError: null, hint: null, completedElapsedMs: null });
 }
 
 describe("gameStore (§12, §31)", () => {

@@ -199,3 +199,76 @@ body {
   max-width: 340px;
 }
 .modal p { margin: 0 0 16px; font-size: 16px; }
+
+/* ================= M2 additions ================= */
+:root { --color-danger: #d9634c; --color-hint: #cfe6c6; }
+
+/* candidate notes (§5) — digits 1-9 in a 3x3 mini grid, never dots */
+.cell .notes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: 100%; height: 100%; padding: 1px;
+}
+.cell .note-cell {
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(7px, 2.3vw, 11px);
+  font-weight: 500; color: var(--color-muted); line-height: 1;
+}
+
+/* conflict styling (unchecked mode, §12) — light, non-blocking */
+.cell.conflict { color: var(--color-danger); background: #fbe7e2; }
+.cell.hint-focus { background: var(--color-hint); outline: 2px solid var(--color-accent); outline-offset: -2px; z-index: 1; }
+
+/* error-mode switch */
+.mode-switch { display: inline-flex; border: 1.5px solid var(--color-grid); border-radius: 10px; overflow: hidden; }
+.mode-opt {
+  min-height: 32px; padding: 0 10px; border: none; background: var(--color-surface);
+  color: var(--color-muted); font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.mode-opt.active { background: var(--color-primary); color: #fff; }
+
+/* note-mode banner (§5) */
+.note-banner {
+  margin: 0 0 8px; padding: 6px 10px; border-radius: 10px;
+  background: var(--color-selected); color: var(--color-primary-strong);
+  font-size: 13px; font-weight: 600; text-align: center;
+}
+
+/* gentle-mode toast (§11) */
+.gentle-toast {
+  margin: 10px 0 0; padding: 8px 12px; border-radius: 10px;
+  background: #fbe7e2; color: var(--color-danger);
+  font-size: 14px; font-weight: 600; text-align: center;
+}
+
+/* toolbar (§23) — icon + label, 4 actions, each >=44px */
+.toolbar { margin-top: 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.tool-btn {
+  min-height: var(--tap);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px; padding: 4px 2px;
+  border: 1.5px solid var(--color-grid); border-radius: 12px;
+  background: var(--color-surface); color: var(--color-text); cursor: pointer;
+}
+.tool-btn:disabled { opacity: 0.4; cursor: default; }
+.tool-btn.active { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
+.tool-icon { font-size: 18px; line-height: 1; }
+.tool-label { font-size: 11px; font-weight: 600; white-space: nowrap; }
+
+/* hint panel (§18-§21) */
+.hint-panel {
+  margin-top: 12px; padding: 12px; border-radius: var(--radius);
+  background: var(--color-surface); border: 1.5px solid var(--color-accent);
+}
+.hint-layer { margin: 0 0 4px; font-size: 12px; color: var(--color-muted); font-weight: 600; }
+.hint-msg { margin: 0 0 10px; font-size: 15px; line-height: 1.5; }
+.hint-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-ghost {
+  min-height: var(--tap); padding: 0 12px; border-radius: 10px;
+  border: 1.5px solid var(--color-grid); background: var(--color-surface);
+  color: var(--color-text); font-size: 14px; font-weight: 600; cursor: pointer;
+}
+
+.pad-note .pad-key { border-color: var(--color-accent); color: var(--color-accent); }
+.done-time { font-size: 16px; color: var(--color-text); margin: 4px 0 16px; }
