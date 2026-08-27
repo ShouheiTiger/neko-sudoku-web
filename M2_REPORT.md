@@ -10,7 +10,8 @@
 | repo | https://github.com/ShouheiTiger/neko-sudoku-web |
 | branch | `feature/m2-gameplay-assistance` |
 | base commit SHA (main, 含 Gate-PASS 的 M1) | `cd07d6de563bb33df9127f12fe582cbd7b42c670` |
-| final commit SHA | `da040ed945ce16a8d3613b3f3d3bb04f66042b84` |
+| code-complete commit SHA | `da040ed945ce16a8d3613b3f3d3bb04f66042b84` |
+| final commit SHA (branch tip = this report fix) | 见下方 push 输出的 `feature/m2-gameplay-assistance` HEAD |
 
 M1→main 采用 **fast-forward** 合并（授权后执行）：`e42787f..cd07d6d`，无额外提交、无 rebase、无 force push。M2 从合并后的 `main` 拉出。
 
