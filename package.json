@@ -1,0 +1,16 @@
+{
+  "name": "neko-sudoku-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Neko Sudoku V1 — M0 Sudoku Core Technical Spike (pure logic, no UI)",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}
