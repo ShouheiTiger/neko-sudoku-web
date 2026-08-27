@@ -45,9 +45,9 @@ test("undo: a committed value can be undone", async ({ page }) => {
   await page.getByTestId("mode-unchecked").click();
   await page.getByTestId(`cell-${idx}`).click();
   await page.getByTestId("pad-5").click();
-  await expect(page.getByTestId(`cell-${idx}`)).toHaveText("5");
+  await expect(page.getByTestId(`value-${idx}`)).toHaveText("5");
   await page.getByTestId("tool-undo").click();
-  await expect(page.getByTestId(`cell-${idx}`)).not.toHaveText("5");
+  await expect(page.getByTestId(`value-${idx}`)).toHaveCount(0);
 });
 
 test("gentle mode: a wrong digit shows a gentle message and is not committed", async ({ page }) => {
@@ -127,4 +127,80 @@ test("lifecycle: visibility hidden→visible does not crash and game persists", 
   await expect(page).toHaveURL(/\/play$/);
   const persisted = await page.evaluate(() => !!window.localStorage.getItem("nekoSudoku.activeGame"));
   expect(persisted).toBe(true);
+});
+
+// ---- FIX-1: completed game must not be offered as "继续上一局" ----
+test("FIX-1: completion clears activeGame; home offers no continue button", async ({ page }) => {
+  await startGame(page);
+  // Solve fully via logical hints (guaranteed correct placements).
+  for (let step = 0; step < 200; step++) {
+    if (await page.getByTestId("done").isVisible().catch(() => false)) break;
+    await page.getByTestId("tool-hint").click();
+    await page.getByTestId("hint-reveal").click();
+    if (!(await page.getByTestId("hint-fill").isVisible().catch(() => false))) {
+      await page.getByTestId("hint-dismiss").click();
+      break;
+    }
+    await page.getByTestId("hint-fill").click();
+  }
+  await expect(page.getByTestId("done")).toBeVisible();
+  await expect(page.getByTestId("done-time")).toContainText("这一局用了");
+
+  // Persistent activeGame must be gone.
+  const absent = await page.evaluate(() => window.localStorage.getItem("nekoSudoku.activeGame") == null);
+  expect(absent).toBe(true);
+
+  // Back to home → no "继续上一局".
+  await page.getByRole("button", { name: "回到首页" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("button", { name: "继续上一局" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "开始一局" })).toBeVisible();
+});
+
+// ---- FIX-3: conflict carries a non-color signal and 320 layout stays clean ----
+test("FIX-3: unchecked conflict shows a non-color marker without overflow", async ({ page }) => {
+  await startGame(page);
+  await page.getByTestId("mode-unchecked").click();
+
+  // Create a guaranteed row conflict: duplicate a given digit into an empty cell in the
+  // same row. Find a given cell and an empty cell sharing its row from storage.
+  const plan = await page.evaluate(() => {
+    const data = JSON.parse(window.localStorage.getItem("nekoSudoku.activeGame")!).data;
+    const board = data.board as { given: boolean; value: number | null }[];
+    for (let r = 0; r < 9; r++) {
+      let givenVal: number | null = null;
+      let givenIdx = -1;
+      let emptyIdx = -1;
+      for (let c = 0; c < 9; c++) {
+        const i = r * 9 + c;
+        if (board[i].given && board[i].value != null) {
+          givenVal = board[i].value;
+          givenIdx = i;
+        } else if (board[i].value == null) {
+          emptyIdx = i;
+        }
+      }
+      if (givenVal != null && emptyIdx >= 0 && givenIdx >= 0) {
+        return { emptyIdx, digit: givenVal };
+      }
+    }
+    return null;
+  });
+  expect(plan).not.toBeNull();
+
+  await page.getByTestId(`cell-${plan!.emptyIdx}`).click();
+  await page.getByTestId(`pad-${plan!.digit}`).click();
+
+  // Non-color signal: the "!" marker is present…
+  await expect(page.getByTestId(`conflict-${plan!.emptyIdx}`)).toHaveText("!");
+  // …and the aria-label announces 冲突 for screen readers.
+  await expect(page.getByTestId(`cell-${plan!.emptyIdx}`)).toHaveAttribute("aria-label", /冲突/);
+  // …and the digit itself is still readable (its own element, not merged with the marker).
+  await expect(page.getByTestId(`value-${plan!.emptyIdx}`)).toHaveText(String(plan!.digit));
+
+  // No horizontal overflow on this viewport (covers 320×568 and 390×844 via projects).
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
 });

@@ -21,6 +21,7 @@ import {
   type ActiveGame,
   type GameAction,
   type ErrorMode,
+  type TimerState,
 } from "../storage/schemas.js";
 import { startTimer, pauseTimer, resumeTimer, completeTimer, elapsedMs } from "../lib/timer.js";
 import { getHintView, type HintView } from "../lib/hintService.js";
@@ -37,6 +38,34 @@ export function __resetNowForTests(): void {
   nowFn = () => Date.now();
 }
 const now = () => nowFn();
+
+// FIX-2 (Gate Medium-2): injectable visibility so restore tests are deterministic. Default
+// reads document.visibilityState; when document is unavailable (SSR/tests) we treat the page
+// as visible.
+let visibilityFn: () => "visible" | "hidden" = () =>
+  typeof document !== "undefined" && document.visibilityState === "hidden"
+    ? "hidden"
+    : "visible";
+export function __setVisibilityForTests(fn: () => "visible" | "hidden"): void {
+  visibilityFn = fn;
+}
+export function __resetVisibilityForTests(): void {
+  visibilityFn = () =>
+    typeof document !== "undefined" && document.visibilityState === "hidden"
+      ? "hidden"
+      : "visible";
+}
+
+/**
+ * FIX-2: resume a restored timer ONLY if the page is currently visible. If the JS context is
+ * (re)loaded while the tab is hidden, we first fold any dangling active span up to `now`
+ * (pauseTimer), then leave it paused — so background time is never counted as active. When
+ * visible, we fold then resume from now (normal foreground refresh behaviour, unchanged).
+ */
+function resumeTimerForRestore(t: TimerState, at: number): TimerState {
+  const paused = pauseTimer(t, at); // idempotent if already paused; no double accumulate
+  return visibilityFn() === "hidden" ? paused : resumeTimer(paused, at);
+}
 
 export type GameState = {
   status: GameStatus;
@@ -135,8 +164,13 @@ function commit(
     const stopped = completeTimer(next.timer, now());
     next = { ...next, timer: stopped };
     completedElapsedMs = elapsedMs(stopped, now());
+    // FIX-1 (Gate Medium-1): a finished board is NOT an "active game". Clear the persistent
+    // activeGame so Home never offers "继续上一局" for a completed board (§7.1 semantics).
+    // The in-memory `game` is kept so the completion page can still show 🐱 + elapsed time.
+    clearActiveGame();
+  } else {
+    saveActiveGame(next);
   }
-  saveActiveGame(next);
   set({ game: next, status, ...(completedElapsedMs != null ? { completedElapsedMs } : {}), ...extra });
 }
 
@@ -170,9 +204,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       set({ restoreAttempted: true, errorMode: settings.errorMode });
       return false;
     }
-    // On resume, timer must not count background time: if it was left "running" (from a
-    // migration or a save that didn't pause), fold the gap up to now, then resume from now.
-    const resumed = { ...loaded, timer: resumeTimer(pauseTimer(loaded.timer, now()), now()) };
+    // On resume, timer must not count background time. FIX-2: only resume if the page is
+    // currently visible; if the JS context reloaded while hidden, keep it paused so the
+    // background span is not counted as active.
+    const resumed = { ...loaded, timer: resumeTimerForRestore(loaded.timer, now()) };
     set({
       game: resumed,
       status: statusFor(resumed.board),
@@ -341,8 +376,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 
 /** Imperative save used by visibilitychange/pagehide (§15/§21). */
 export function persistCurrentGame(): void {
-  const { game } = useGameStore.getState();
-  if (game) saveActiveGame(game);
+  const { game, status } = useGameStore.getState();
+  // FIX-1 (Gate Medium-1): never re-write a completed game back into activeGame — a finished
+  // board must not resurrect as an "active game" via a lifecycle event.
+  if (game && status !== "completed") saveActiveGame(game);
 }
 
 export { DEV_PUZZLES };

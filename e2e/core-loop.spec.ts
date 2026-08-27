@@ -37,12 +37,12 @@ test("core loop: start, input, refresh keeps the number", async ({ page }) => {
   await page.getByTestId("mode-unchecked").click();
   await page.getByTestId(`cell-${emptyIndex}`).click();
   await page.getByTestId("pad-7").click();
-  await expect(page.getByTestId(`cell-${emptyIndex}`)).toHaveText("7");
+  await expect(page.getByTestId(`value-${emptyIndex}`)).toHaveText("7");
 
   // Refresh: number must persist (§7, §21).
   await page.reload();
   await expect(page).toHaveURL(/\/play$/);
-  await expect(page.getByTestId(`cell-${emptyIndex}`)).toHaveText("7");
+  await expect(page.getByTestId(`value-${emptyIndex}`)).toHaveText("7");
 
   // Home now offers "继续上一局".
   await page.getByRole("button", { name: "首页" }).click();
