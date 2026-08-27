@@ -3,7 +3,7 @@
 ## A. 基础信息
 ```text
 base commit SHA   : e42787fb83d6b32a9ca9256e181fbc8467390822   (M0 CLOSED)
-final commit SHA  : 023e5812fe7e618e5c7ff0c32d535e73ade9d8a3
+final commit SHA  : 0336adc9d269ad6b37e4dd923f00462fb69a7622  (code+report; this SHA line finalized in the immediately following doc commit)
 branch            : feature/m1-web-shell
 ```
 唯一需求基准：Neko Sudoku V1 Frozen PRD & Technical Specification v2.0 + M1 开发指令。
