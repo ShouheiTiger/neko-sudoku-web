@@ -1,0 +1,201 @@
+/* Neko Sudoku M1 — 奶油猫基础视觉 (§28). Mobile-first, minimal, no heavy gradients/animation. */
+:root {
+  --color-bg: #fbf7ef;        /* 米白 */
+  --color-surface: #ffffff;   /* 温暖白 */
+  --color-text: #3a332b;      /* 清晰深色文字 */
+  --color-muted: #8a8172;
+  --color-primary: #e8955b;   /* 柔和橙 */
+  --color-primary-strong: #d97b3c;
+  --color-accent: #8fae86;    /* 鼠尾草绿 */
+  --color-grid: #d8cfc0;
+  --color-grid-strong: #9a8f7c;
+  --color-selected: #f6dcc2;
+  --color-peer: #f3ede1;      /* 同行/列/宫浅高亮 */
+  --color-given: #3a332b;
+  --color-user: #d97b3c;
+
+  --radius: 14px;
+  --tap: 44px; /* minimum touch target (§16, §30) */
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100%;
+  padding: 16px 12px calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+}
+
+.cat {
+  font-size: 44px;
+  line-height: 1;
+  text-align: center;
+}
+
+.cat-line {
+  text-align: center;
+  color: var(--color-muted);
+  margin: 8px 0 20px;
+  font-size: 16px;
+}
+
+.title {
+  text-align: center;
+  font-size: 22px;
+  margin: 12px 0;
+  font-weight: 700;
+}
+
+.btn {
+  display: block;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 12px 16px;
+  margin: 8px 0;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1.5px solid var(--color-grid);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary-strong);
+}
+
+.btn-row {
+  display: flex;
+  gap: 10px;
+}
+.btn-row .btn { margin: 8px 0; }
+
+.spacer { flex: 1 1 auto; }
+
+/* ---------- Board ---------- */
+.board-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.board {
+  width: min(96vw, 420px);
+  aspect-ratio: 1 / 1;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(9, 1fr);
+  background: var(--color-grid-strong);
+  border: 2.5px solid var(--color-grid-strong);
+  border-radius: 8px;
+  overflow: hidden;
+  gap: 1px;
+}
+
+.cell {
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(16px, 5.4vw, 26px);
+  font-weight: 600;
+  color: var(--color-user);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  user-select: none;
+  position: relative;
+}
+.cell.given { color: var(--color-given); font-weight: 700; cursor: default; }
+.cell.peer { background: var(--color-peer); }
+.cell.selected { background: var(--color-selected); outline: 2px solid var(--color-primary-strong); outline-offset: -2px; z-index: 1; }
+
+/* thick 3x3 box borders */
+.cell.box-right { box-shadow: 1.5px 0 0 0 var(--color-grid-strong); }
+.cell.box-bottom { box-shadow: 0 1.5px 0 0 var(--color-grid-strong); }
+.cell.box-right.box-bottom { box-shadow: 1.5px 0 0 0 var(--color-grid-strong), 0 1.5px 0 0 var(--color-grid-strong); }
+
+/* ---------- Number pad ---------- */
+.pad {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.pad-key {
+  min-height: var(--tap);
+  min-width: var(--tap);
+  height: 52px;
+  border-radius: 12px;
+  border: 1.5px solid var(--color-grid);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 22px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pad-key:active { background: var(--color-selected); }
+.pad-key.del { color: var(--color-primary-strong); font-size: 18px; }
+
+.game-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  font-size: 15px;
+  min-height: var(--tap);
+  padding: 0 8px;
+  cursor: pointer;
+}
+.diff-tag { font-weight: 700; color: var(--color-text); font-size: 16px; }
+
+/* completion banner */
+.done {
+  text-align: center;
+  padding: 24px 8px;
+}
+.done .cat { font-size: 56px; }
+.done h2 { margin: 12px 0; }
+
+/* modal */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.modal {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  width: 100%;
+  max-width: 340px;
+}
+.modal p { margin: 0 0 16px; font-size: 16px; }
