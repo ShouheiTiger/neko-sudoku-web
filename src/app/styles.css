@@ -304,20 +304,31 @@ body {
   margin: 4px 0 8px;
 }
 .cat-companion.cat-large { min-height: 120px; }
-.cat-art { font-size: 40px; line-height: 1; will-change: transform, opacity; }
-.cat-large .cat-art { font-size: 64px; }
+/* Fixed art box so switching among the 5 state images never shifts layout (§12). The image
+   fills the box with object-fit: contain (transparent WebP). Emoji fallback keeps the old size. */
+.cat-art {
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1; will-change: transform, opacity;
+}
+.cat-large .cat-art { width: 92px; height: 92px; }
+.cat-art-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.cat-art-fallback { font-size: 40px; line-height: 1; }
+.cat-large .cat-art-fallback { font-size: 64px; }
 .cat-copy { margin: 0; font-size: 14px; color: var(--color-muted); text-align: center; }
 .home .cat-line { font-size: 16px; }
 
-/* Very light animations only (§12): opacity / small translate / small scale. */
+/* Very light animations only (§12): opacity / small translate / small scale. Applied to the
+   fixed .cat-art box; the box size never changes, so no layout shift. */
 @keyframes cat-breathe { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes cat-tilt { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(-2.5deg); } }
 @keyframes cat-fade { from { opacity: 0.6; } to { opacity: 1; } }
-@keyframes cat-pop { 0% { transform: scale(0.96); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
+@keyframes cat-pop { 0% { transform: scale(0.96); } 60% { transform: scale(1.05); } 100% { transform: scale(1); } }
 .cat-anim-idle { animation: cat-breathe 4s ease-in-out infinite; }
-.cat-anim-thinking { animation: cat-fade 0.4s ease-in; }
-.cat-anim-hinting { animation: cat-fade 0.4s ease-in; }
-.cat-anim-sleeping { opacity: 0.85; }
-.cat-anim-celebrating { animation: cat-pop 0.5s ease-out; }
+.cat-anim-thinking { animation: cat-tilt 1.6s ease-in-out infinite; }
+.cat-anim-hinting { animation: cat-breathe 2.2s ease-in-out infinite; }
+.cat-anim-sleeping { opacity: 0.9; } /* essentially still (§5) */
+.cat-anim-celebrating { animation: cat-pop 0.6s ease-out; }
 
 /* ---- Reduced motion (§12): disable non-essential animation, keep all function ---- */
 @media (prefers-reduced-motion: reduce) {
@@ -325,9 +336,11 @@ body {
   .cat-anim-idle,
   .cat-anim-thinking,
   .cat-anim-hinting,
+  .cat-anim-sleeping,
   .cat-anim-celebrating {
     animation: none !important;
     transition: none !important;
+    transform: none !important;
   }
 }
 

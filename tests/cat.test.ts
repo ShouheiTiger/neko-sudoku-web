@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { catCopy, catEmoji, catStateForScreen, type CatState } from "../src/lib/cat.js";
+import { catCopy, catEmoji, catAsset, catStateForScreen, type CatState } from "../src/lib/cat.js";
 
 const STATES: CatState[] = ["idle", "thinking", "sleeping", "hinting", "celebrating"];
 
@@ -50,5 +50,25 @@ describe("M3 Cat companion (§6-§9, §30)", () => {
     for (const l of lines) {
       expect(l).not.toMatch(/快|慢了|分|名次|排名|最佳|纪录|错误|星/);
     }
+  });
+
+  it("catAsset maps each of the 5 states to a unique local same-origin WebP (§Cat Integration)", () => {
+    const expected: Record<CatState, string> = {
+      idle: "/cats/cat-idle.webp",
+      thinking: "/cats/cat-thinking.webp",
+      sleeping: "/cats/cat-sleeping.webp",
+      hinting: "/cats/cat-hinting.webp",
+      celebrating: "/cats/cat-celebrating.webp",
+    };
+    const urls = new Set<string>();
+    for (const s of STATES) {
+      const url = catAsset(s);
+      expect(url).toBe(expected[s]);
+      expect(url.startsWith("/cats/")).toBe(true); // local same-origin, no http(s):// / CDN
+      expect(url.endsWith(".webp")).toBe(true);
+      expect(url).not.toMatch(/^https?:|\/\//); // never an external URL
+      urls.add(url);
+    }
+    expect(urls.size).toBe(5); // one distinct asset per state
   });
 });

@@ -42,7 +42,8 @@ export function catCopy(state: CatState, difficulty: Difficulty, seed = 0): stri
   }
 }
 
-/** Emoji placeholder art per state (§11 — no bespoke art generated). Decorative only. */
+/** Emoji placeholder art per state. Retained ONLY as a fallback if the WebP asset fails to
+ *  load (§45 graceful degradation). Production render uses catAsset() below. Decorative only. */
 export function catEmoji(state: CatState): string {
   switch (state) {
     case "sleeping":
@@ -56,6 +57,26 @@ export function catEmoji(state: CatState): string {
     case "idle":
     default:
       return "🐱";
+  }
+}
+
+/**
+ * Static state → final cat WebP asset mapping (V1 Cat Asset Integration). Local same-origin
+ * assets under /cats (Vite publicDir), 512×512 transparent WebP. This is a pure lookup — it
+ * does NOT read or influence the Cat state machine, copy, timing, or any hidden signal.
+ */
+export function catAsset(state: CatState): string {
+  switch (state) {
+    case "idle":
+      return "/cats/cat-idle.webp";
+    case "thinking":
+      return "/cats/cat-thinking.webp";
+    case "sleeping":
+      return "/cats/cat-sleeping.webp";
+    case "hinting":
+      return "/cats/cat-hinting.webp";
+    case "celebrating":
+      return "/cats/cat-celebrating.webp";
   }
 }
 
