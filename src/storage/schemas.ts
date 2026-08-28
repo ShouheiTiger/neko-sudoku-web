@@ -6,7 +6,8 @@
 import { z } from "zod";
 
 export const SCHEMA_VERSION_V1 = 1;
-export const SCHEMA_VERSION = 2; // current (M2)
+export const SCHEMA_VERSION_V2 = 2; // M2 activeGame
+export const SCHEMA_VERSION = 3; // current (V1 Release Prep — adds puzzleSnapshot)
 export const SETTINGS_SCHEMA_VERSION_V1 = 1; // M2 settings (errorMode only)
 export const SETTINGS_SCHEMA_VERSION = 2; // M3 settings (+largeText,+tutorialSeen)
 export const HISTORY_SCHEMA_VERSION = 1; // M3 history
@@ -74,7 +75,38 @@ export const activeGameSchemaV1 = z.object({
 });
 export type ActiveGameV1 = z.infer<typeof activeGameSchemaV1>;
 
-// ---- v2 ActiveGame (M2, current) ----
+// ---- v2 ActiveGame (M2) — kept as a migration input shape ----
+export const activeGameSchemaV2 = z.object({
+  schemaVersion: z.literal(SCHEMA_VERSION_V2),
+  gameId: z.string().min(1),
+  puzzleId: z.string().min(1),
+  difficulty: difficultySchema,
+  board: boardSchema,
+  selectedCell: z.number().int().min(0).max(80).nullable(),
+  noteMode: z.boolean(),
+  undoStack: z.array(gameActionSchema).max(UNDO_STACK_LIMIT),
+  hintCount: z.number().int().min(0),
+  directHintCount: z.number().int().min(0),
+  timer: timerStateSchema,
+  createdAt: z.number(),
+  updatedAt: z.number(),
+  engineVersion: z.number(),
+});
+export type ActiveGameV2 = z.infer<typeof activeGameSchemaV2>;
+
+/**
+ * V1 Release Prep: a lightweight snapshot of the served production puzzle carried inside the
+ * ActiveGame so gentle-error / completion validation survive a refresh WITHOUT loading the
+ * whole bank (§28). Hint / solver / candidate engine MUST NEVER read `solution` (§14).
+ */
+export const puzzleSnapshotSchema = z.object({
+  puzzle: z.string().length(81),
+  solution: z.string().length(81),
+  bankVersion: z.string().min(1),
+});
+export type PuzzleSnapshot = z.infer<typeof puzzleSnapshotSchema>;
+
+// ---- v3 ActiveGame (V1 Release Prep, current) — adds optional puzzleSnapshot ----
 export const activeGameSchema = z.object({
   schemaVersion: z.literal(SCHEMA_VERSION),
   gameId: z.string().min(1),
@@ -82,12 +114,13 @@ export const activeGameSchema = z.object({
   difficulty: difficultySchema,
   board: boardSchema,
   selectedCell: z.number().int().min(0).max(80).nullable(),
-  // M2 additions (§24)
   noteMode: z.boolean(),
   undoStack: z.array(gameActionSchema).max(UNDO_STACK_LIMIT),
   hintCount: z.number().int().min(0),
   directHintCount: z.number().int().min(0),
   timer: timerStateSchema,
+  // §28 optional; legacy dev games resolve the solution via a dev-pool fallback instead.
+  puzzleSnapshot: puzzleSnapshotSchema.optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
   engineVersion: z.number(),
@@ -107,6 +140,13 @@ export const envelopeSchemaV1 = z.object({
   schemaVersion: z.literal(SCHEMA_VERSION_V1),
   savedAt: z.number(),
   data: activeGameSchemaV1,
+});
+
+// v2 envelope shape, for migration input (M2 → v3).
+export const envelopeSchemaV2 = z.object({
+  schemaVersion: z.literal(SCHEMA_VERSION_V2),
+  savedAt: z.number(),
+  data: activeGameSchemaV2,
 });
 
 // ---- Settings ----

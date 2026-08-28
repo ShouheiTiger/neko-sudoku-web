@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { APP_VERSION, PUZZLE_BANK_VERSION } from "../../lib/release.js";
 
 // M3 §27 /help. Short, gentle rules — NOT a knowledge base. Emphasises no ranking/score.
 export function HelpPage() {
@@ -47,6 +48,10 @@ export function HelpPage() {
         <h2 className="settings-title">关于成绩</h2>
         <p>这里没有分数、没有排名、也不和别人比较。慢慢想，也很好。</p>
       </section>
+
+      <p className="release-meta" data-testid="release-meta">
+        版本 {APP_VERSION} · 题库 {PUZZLE_BANK_VERSION}
+      </p>
     </main>
   );
 }

@@ -5,11 +5,14 @@
 // then redirects to home). We never `JSON.parse(...) as ActiveGame` (§22).
 import { DEV_PUZZLES } from "../data/dev-puzzles.js";
 import { startTimer } from "../lib/timer.js";
+import { z } from "zod";
 import {
   activeGameSchema,
   envelopeSchema,
   envelopeSchemaV1,
+  envelopeSchemaV2,
   activeGameSchemaV1,
+  activeGameSchemaV2,
   settingsSchema,
   settingsSchemaV1,
   historyEnvelopeSchema,
@@ -20,6 +23,7 @@ import {
   HISTORY_LIMIT,
   type ActiveGame,
   type ActiveGameV1,
+  type ActiveGameV2,
   type Settings,
   type ErrorMode,
   type HistoryRecord,
@@ -28,6 +32,10 @@ import {
 export const ACTIVE_GAME_KEY = "nekoSudoku.activeGame";
 export const SETTINGS_KEY = "nekoSudoku.settings";
 export const HISTORY_KEY = "nekoSudoku.history";
+export const RECENT_PUZZLE_IDS_KEY = "nekoSudoku.recentPuzzleIds";
+
+/** §26 Max recent puzzle ids remembered per selection avoidance. Bounded, never grows. */
+export const RECENT_PUZZLE_LIMIT = 40;
 
 type Storage = Pick<Window["localStorage"], "getItem" | "setItem" | "removeItem">;
 
@@ -64,11 +72,11 @@ export function clearActiveGame(store?: Storage): void {
 }
 
 /**
- * M2 §25 migrate a validated v1 ActiveGame to v2 with safe defaults. We do NOT delete old
- * M1 saves. The v1 board has no timer info, so we start the timer at `now` (documented in
- * M2_REPORT.md) — background/paused time before migration cannot be reconstructed.
+ * Migrate a validated v1 ActiveGame (M1) to v3 with safe defaults. We do NOT delete old
+ * saves. The v1 board has no timer info, so we start the timer at `now`. No puzzleSnapshot
+ * (legacy dev games resolve their solution via the dev-pool fallback).
  */
-export function migrateV1ToV2(v1: ActiveGameV1, now: number): ActiveGame {
+export function migrateV1ToV3(v1: ActiveGameV1, now: number): ActiveGame {
   return {
     schemaVersion: SCHEMA_VERSION,
     gameId: v1.gameId,
@@ -84,6 +92,30 @@ export function migrateV1ToV2(v1: ActiveGameV1, now: number): ActiveGame {
     createdAt: v1.createdAt,
     updatedAt: now,
     engineVersion: v1.engineVersion,
+  };
+}
+
+/**
+ * Migrate a validated v2 ActiveGame (M2/M3) to v3. All v2 gameplay fields are preserved
+ * verbatim (§29: puzzleId/difficulty/board/notes/undo/timer). No puzzleSnapshot is added —
+ * v2 games are dev-pool games whose solution resolves via the dev fallback.
+ */
+export function migrateV2ToV3(v2: ActiveGameV2, now: number): ActiveGame {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    gameId: v2.gameId,
+    puzzleId: v2.puzzleId,
+    difficulty: v2.difficulty,
+    board: v2.board,
+    selectedCell: v2.selectedCell,
+    noteMode: v2.noteMode,
+    undoStack: v2.undoStack,
+    hintCount: v2.hintCount,
+    directHintCount: v2.directHintCount,
+    timer: v2.timer,
+    createdAt: v2.createdAt,
+    updatedAt: now,
+    engineVersion: v2.engineVersion,
   };
 }
 
@@ -112,26 +144,43 @@ export function loadActiveGame(store?: Storage, now: number = Date.now()): Activ
     return drop("invalid-json", err);
   }
 
-  // 1) Current v2 envelope.
+  // 1) Current v3 envelope.
   const env = envelopeSchema.safeParse(parsed);
   if (env.success) return validateSemantics(env.data.data, drop);
 
-  // 2) v1 envelope → migrate.
+  // 2) v2 envelope → migrate to v3.
+  const envV2 = envelopeSchemaV2.safeParse(parsed);
+  if (envV2.success) {
+    const migrated = migrateV2ToV3(envV2.data.data, now);
+    const ok = validateSemantics(migrated, drop);
+    if (ok) saveActiveGame(ok, s);
+    return ok;
+  }
+
+  // 3) v1 envelope → migrate to v3.
   const envV1 = envelopeSchemaV1.safeParse(parsed);
   if (envV1.success) {
-    const migrated = migrateV1ToV2(envV1.data.data, now);
+    const migrated = migrateV1ToV3(envV1.data.data, now);
     const ok = validateSemantics(migrated, drop);
     if (ok) saveActiveGame(ok, s); // persist migrated form
     return ok;
   }
 
-  // 3) Bare shapes (defensive): try v2 data, then v1 data → migrate.
-  const bareV2 = activeGameSchema.safeParse(parsed);
-  if (bareV2.success) return validateSemantics(bareV2.data, drop);
+  // 4) Bare shapes (defensive): v3, then v2, then v1 → migrate.
+  const bareV3 = activeGameSchema.safeParse(parsed);
+  if (bareV3.success) return validateSemantics(bareV3.data, drop);
+
+  const bareV2 = activeGameSchemaV2.safeParse(parsed);
+  if (bareV2.success) {
+    const migrated = migrateV2ToV3(bareV2.data, now);
+    const ok = validateSemantics(migrated, drop);
+    if (ok) saveActiveGame(ok, s);
+    return ok;
+  }
 
   const bareV1 = activeGameSchemaV1.safeParse(parsed);
   if (bareV1.success) {
-    const migrated = migrateV1ToV2(bareV1.data, now);
+    const migrated = migrateV1ToV3(bareV1.data, now);
     const ok = validateSemantics(migrated, drop);
     if (ok) saveActiveGame(ok, s);
     return ok;
@@ -140,12 +189,18 @@ export function loadActiveGame(store?: Storage, now: number = Date.now()): Activ
   return drop("schema-invalid", env.error.issues);
 }
 
+const PRODUCTION_ID_RE = /^v1-l[1-4]-\d{4}$/;
+
 function validateSemantics(
   game: ActiveGame,
   drop: (reason: string, extra?: unknown) => null,
 ): ActiveGame | null {
-  // puzzleId must exist in the known pool (§23).
-  if (!DEV_PUZZLES.some((p) => p.id === game.puzzleId)) return drop("unknown-puzzle-id");
+  // §23/§28 A game is recognizable if it is a production puzzle (id pattern OR carries a
+  // puzzleSnapshot for offline solution validation) OR a legacy dev puzzle (tests/migration
+  // fallback). Otherwise the persisted id is unknown and we drop it.
+  const isProduction = PRODUCTION_ID_RE.test(game.puzzleId) || game.puzzleSnapshot != null;
+  const isDev = DEV_PUZZLES.some((p) => p.id === game.puzzleId);
+  if (!isProduction && !isDev) return drop("unknown-puzzle-id");
   // We deliberately do NOT reject a board merely because the user's in-progress entries
   // conflict: under "unchecked" mode (§12/§37.2) duplicates are a legal mid-game state and
   // §2.5 requires the game to always be recoverable. Structural legality is enforced by Zod.
@@ -298,6 +353,54 @@ export function clearHistory(store?: Storage): void {
   if (!s) return;
   try {
     s.removeItem(HISTORY_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+// ---------------- Recent puzzle ids (§26) ----------------
+// A bounded, newest-first list of recently served puzzle ids, used ONLY to avoid immediately
+// repeating a puzzle. Never grows unbounded; corruption falls back to empty; write failure is
+// swallowed (selection must never crash just because we couldn't remember the recent list).
+const recentSchema = z.array(z.string().min(1));
+
+export function loadRecentPuzzleIds(store?: Storage): string[] {
+  const s = getStore(store);
+  if (!s) return [];
+  let raw: string | null = null;
+  try {
+    raw = s.getItem(RECENT_PUZZLE_IDS_KEY);
+  } catch {
+    return [];
+  }
+  if (!raw) return [];
+  try {
+    const parsed = recentSchema.safeParse(JSON.parse(raw));
+    if (!parsed.success) return [];
+    return parsed.data.slice(0, RECENT_PUZZLE_LIMIT);
+  } catch {
+    return [];
+  }
+}
+
+/** Record a served puzzle id (newest-first, deduped, bounded). Never throws. */
+export function pushRecentPuzzleId(id: string, store?: Storage): void {
+  const s = getStore(store);
+  if (!s) return;
+  const existing = loadRecentPuzzleIds(store).filter((x) => x !== id);
+  const next = [id, ...existing].slice(0, RECENT_PUZZLE_LIMIT);
+  try {
+    s.setItem(RECENT_PUZZLE_IDS_KEY, JSON.stringify(next));
+  } catch (err) {
+    console.warn("[nekoSudoku] failed to persist recent puzzle ids:", err);
+  }
+}
+
+export function clearRecentPuzzleIds(store?: Storage): void {
+  const s = getStore(store);
+  if (!s) return;
+  try {
+    s.removeItem(RECENT_PUZZLE_IDS_KEY);
   } catch {
     /* ignore */
   }

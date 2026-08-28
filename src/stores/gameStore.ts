@@ -5,7 +5,7 @@ import { create } from "zustand";
 import { setValue, clearValue, toggleNote, isCompleted } from "../game-engine.js";
 import { parsePuzzle } from "../board.js";
 import type { BoardState, CellState } from "../types.js";
-import { DEV_PUZZLES, puzzlesForDifficulty } from "../data/dev-puzzles.js";
+import { DEV_PUZZLES } from "../data/dev-puzzles.js";
 import {
   saveActiveGame,
   clearActiveGame,
@@ -14,6 +14,13 @@ import {
   saveSettings,
   appendHistoryOnce,
 } from "../storage/gameStorage.js";
+import {
+  selectLoaded,
+  loadLevel,
+  isLevelLoaded,
+  type BankLoadFailure,
+  type Level,
+} from "../data/bank/loader.js";
 import {
   SCHEMA_VERSION,
   ENGINE_VERSION,
@@ -78,8 +85,13 @@ export type GameState = {
   hint: HintView | null;
   /** Elapsed ms shown ONLY on the completion page (§16). Never shown while playing (§14). */
   completedElapsedMs: number | null;
+  /** §45 Non-crashing production-bank load error, surfaced to the New/Play UI. */
+  bankError: BankLoadFailure | null;
 
   startNewGame: (difficulty: Difficulty) => void;
+  /** §23/§45 Load + validate a level's production bank into cache. Returns null on success or
+   *  a non-crashing failure reason the UI can show. Call before startNewGame. */
+  prepareLevel: (difficulty: Difficulty) => Promise<BankLoadFailure | null>;
   restoreGame: () => boolean;
   selectCell: (cellIndex: number | null) => void;
   enterDigit: (digit: number) => void;
@@ -94,33 +106,50 @@ export type GameState = {
   pauseForHidden: () => void;
   resumeFromVisible: () => void;
   abandonGame: () => void;
+  clearBankError: () => void;
 };
 
 let gameCounter = 0;
 const newGameId = () => `g-${now()}-${++gameCounter}`;
 
-function pickPuzzle(difficulty: Difficulty) {
-  const pool = puzzlesForDifficulty(difficulty);
-  const idx = Math.floor(Math.random() * pool.length);
-  return pool[idx] ?? pool[0]!;
+// §14 SOLUTION RED LINE: the solution is used ONLY for gentle-error and completion validation
+// here in the store/adapter. Hint / solver / candidate engine never call this.
+// Production games carry a puzzleSnapshot; legacy dev games fall back to the dev pool by id.
+function solutionFor(game: ActiveGame): string | null {
+  if (game.puzzleSnapshot) return game.puzzleSnapshot.solution;
+  return DEV_PUZZLES.find((p) => p.id === game.puzzleId)?.solution ?? null;
 }
 
-function solutionFor(puzzleId: string): string | null {
-  return DEV_PUZZLES.find((p) => p.id === puzzleId)?.solution ?? null;
+export type PickedPuzzle = { id: string; puzzle: string; solution: string; bankVersion: string };
+
+/**
+ * Synchronous puzzle picker. The default reads from the Production Bank loader's in-memory
+ * cache (populated by `prepareLevel`). If the level was NOT preloaded, it returns null and the
+ * store surfaces a bankError (§45). Tests inject a deterministic source via
+ * `__setPuzzleSourceForTests` so they can run fully synchronously against the dev pool.
+ */
+type SyncPuzzleSource = (difficulty: Difficulty) => PickedPuzzle | null;
+const defaultPuzzleSource: SyncPuzzleSource = (difficulty) => {
+  const res = selectLoaded(difficulty as Level);
+  if (!res) return null;
+  return { id: res.id, puzzle: res.puzzle, solution: res.solution, bankVersion: res.bankVersion };
+};
+let puzzleSource: SyncPuzzleSource = defaultPuzzleSource;
+export function __setPuzzleSourceForTests(fn: SyncPuzzleSource | null): void {
+  puzzleSource = fn ?? defaultPuzzleSource;
 }
 
-function buildActiveGame(difficulty: Difficulty): ActiveGame | null {
-  const puzzle = pickPuzzle(difficulty);
-  const parsed = parsePuzzle(puzzle.puzzle);
+function buildActiveGameFrom(difficulty: Difficulty, src: PickedPuzzle): ActiveGame | null {
+  const parsed = parsePuzzle(src.puzzle);
   if (!parsed.ok) {
-    console.error("[nekoSudoku] dev puzzle failed to parse", puzzle.id, parsed.reason);
+    console.error("[nekoSudoku] production puzzle failed to parse", src.id, parsed.reason);
     return null;
   }
   const t = now();
   return {
     schemaVersion: SCHEMA_VERSION,
     gameId: newGameId(),
-    puzzleId: puzzle.id,
+    puzzleId: src.id,
     difficulty,
     board: parsed.board,
     selectedCell: null,
@@ -129,6 +158,8 @@ function buildActiveGame(difficulty: Difficulty): ActiveGame | null {
     hintCount: 0,
     directHintCount: 0,
     timer: startTimer(t),
+    // §28 carry the snapshot so gentle/completion validation survive refresh w/o loading bank.
+    puzzleSnapshot: { puzzle: src.puzzle, solution: src.solution, bankVersion: src.bankVersion },
     createdAt: t,
     updatedAt: t,
     engineVersion: ENGINE_VERSION,
@@ -201,10 +232,20 @@ export const useGameStore = create<GameState>((set, get) => ({
   gentleError: null,
   hint: null,
   completedElapsedMs: null,
+  bankError: null,
 
   startNewGame: (difficulty) => {
-    const game = buildActiveGame(difficulty);
-    if (!game) return;
+    const src = puzzleSource(difficulty);
+    if (!src) {
+      // Level not loaded / empty → surface a gentle, non-crashing error (§45). No activeGame.
+      set({ bankError: isLevelLoaded(difficulty as Level) ? "empty" : "network" });
+      return;
+    }
+    const game = buildActiveGameFrom(difficulty, src);
+    if (!game) {
+      set({ bankError: "invalid-schema" });
+      return;
+    }
     saveActiveGame(game); // §21 save on start
     set({
       game,
@@ -213,8 +254,21 @@ export const useGameStore = create<GameState>((set, get) => ({
       gentleError: null,
       hint: null,
       completedElapsedMs: null,
+      bankError: null,
     });
   },
+
+  prepareLevel: async (difficulty) => {
+    const res = await loadLevel(difficulty as Level);
+    if (!res.ok) {
+      set({ bankError: res.reason });
+      return res.reason;
+    }
+    set({ bankError: null });
+    return null;
+  },
+
+  clearBankError: () => set({ bankError: null }),
 
   restoreGame: () => {
     const settings = loadSettings();
@@ -283,7 +337,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     // message and DO NOT commit the wrong value (§11). Judgement lives here (store/adapter),
     // not in a React component, and compares against the puzzle definition, not solver.
     if (errorMode === "gentle") {
-      const solution = solutionFor(game.puzzleId);
+      const solution = solutionFor(game);
       if (solution && Number(solution[idx]) !== digit) {
         set({ gentleError: { cellIndex: idx, digit } });
         return; // auto-clear handled by UI after ~1.5s via clearGentleError()
