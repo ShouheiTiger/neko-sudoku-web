@@ -164,20 +164,29 @@ function commit(
     const stopped = completeTimer(next.timer, now());
     next = { ...next, timer: stopped };
     completedElapsedMs = elapsedMs(stopped, now());
-    // M3 §22 completion order: calc elapsed → append history EXACTLY ONCE → clear activeGame.
-    // appendHistoryOnce is idempotent by gameId and never throws, so repeated completion
-    // commits / rerenders / lifecycle events cannot duplicate or crash (§22/§32).
-    appendHistoryOnce({
+    // M3 §22 completion order: calc elapsed → append history → (only if persisted) clear.
+    // M-1 (Gate Medium-1): distinguish written/duplicate/failed. "written" or "duplicate"
+    // mean the completion is durably recorded → safe to clear the finished activeGame.
+    // "failed" (quota/security/invalid) means NOTHING was persisted → KEEP activeGame so the
+    // completion can be retried next time /play is entered (§2.5 always recoverable). None of
+    // these throw, so the completion UI never crashes (§32).
+    const historyResult = appendHistoryOnce({
       gameId: next.gameId,
       puzzleId: next.puzzleId,
       difficulty: next.difficulty,
       completedAt: now(),
       elapsedMs: completedElapsedMs,
     });
-    // FIX-1 (Gate Medium-1): a finished board is NOT an "active game". Clear the persistent
-    // activeGame so Home never offers "继续上一局" for a completed board (§7.1 semantics).
-    // The in-memory `game` is kept so the completion page can still show 🐱 + elapsed time.
-    clearActiveGame();
+    if (historyResult === "written" || historyResult === "duplicate") {
+      // FIX-1 (Gate Medium-1, M2): a finished + recorded board is NOT an "active game".
+      // Clear the persistent activeGame so Home never offers "继续上一局" (§7.1 semantics).
+      // The in-memory `game` is kept so the completion page can still show 🐱 + elapsed time.
+      clearActiveGame();
+    } else {
+      // history write failed → keep the completed board persisted for a retry. The board is
+      // already complete, so re-entering /play re-runs commit() and re-attempts the write.
+      saveActiveGame(next);
+    }
   } else {
     saveActiveGame(next);
   }
@@ -214,6 +223,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       set({ restoreAttempted: true, errorMode: settings.errorMode });
       return false;
     }
+
+    // M-1 retry: a persisted board can only still be "active" (unfinished) OR a completed
+    // board whose history write previously FAILED (we keep it for retry, §2.5). If it is
+    // already completed, do NOT resume its timer (it was frozen at completion); re-run the
+    // completion side-effects via commit() so history is (re)attempted and, on success, the
+    // activeGame is cleared. appendHistoryOnce is idempotent by gameId → no duplicate row.
+    if (statusFor(loaded.board) === "completed") {
+      set({ errorMode: settings.errorMode, gentleError: null, hint: null, restoreAttempted: true });
+      commit(set, loaded); // recomputes completed, retries history, clears on success
+      return true;
+    }
+
     // On resume, timer must not count background time. FIX-2: only resume if the page is
     // currently visible; if the JS context reloaded while hidden, keep it paused so the
     // background span is not counted as active.

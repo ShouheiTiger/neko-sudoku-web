@@ -3,7 +3,7 @@
   --color-bg: #fbf7ef;        /* 米白 */
   --color-surface: #ffffff;   /* 温暖白 */
   --color-text: #3a332b;      /* 清晰深色文字 */
-  --color-muted: #8a8172;
+  --color-muted: #6f675a;     /* M-2: 加深暖灰, WCAG AA >=4.5:1 on #fbf7ef(5.22) & #fff(5.58) */
   --color-primary: #e8955b;   /* 柔和橙 */
   --color-primary-strong: #d97b3c;
   --color-accent: #8fae86;    /* 鼠尾草绿 */

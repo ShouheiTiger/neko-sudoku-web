@@ -263,25 +263,34 @@ function writeHistory(records: HistoryRecord[], store?: Storage): boolean {
   }
 }
 
+/** M-1: explicit History write outcome so callers can distinguish duplicate from failure. */
+export type HistoryAppendResult = "written" | "duplicate" | "failed";
+
 /**
  * M3 §22 append a completed game to history EXACTLY ONCE (idempotent by gameId). Safe to call
- * repeatedly on completion rerenders / StrictMode / lifecycle events. Never throws; a write
- * failure is swallowed (logged) so it cannot crash the completion flow.
- * Returns true if a new record was written, false if it was a duplicate / write failed.
+ * repeatedly on completion rerenders / StrictMode / lifecycle events. Never throws.
+ *
+ * M-1 result contract (unambiguous, not a bare boolean):
+ *   - "written"   : a NEW record was persisted this call.
+ *   - "duplicate" : this gameId is already persisted → treat as already-saved (safe to clear
+ *                   the completed activeGame; no second row is written).
+ *   - "failed"    : the record was invalid OR the storage write failed (quota/security/etc).
+ *                   The completed game is NOT persisted → caller MUST keep activeGame so the
+ *                   completion can be retried on the next /play entry.
  */
-export function appendHistoryOnce(record: HistoryRecord, store?: Storage): boolean {
+export function appendHistoryOnce(record: HistoryRecord, store?: Storage): HistoryAppendResult {
   // Validate the record shape defensively (never trust callers blindly).
   const parsed = historyRecordSchema.safeParse(record);
   if (!parsed.success) {
     console.warn("[nekoSudoku] refusing to append invalid history record", parsed.error.issues);
-    return false;
+    return "failed";
   }
   const existing = loadHistory(store);
-  if (existing.some((r) => r.gameId === parsed.data.gameId)) return false; // dedupe by gameId
+  if (existing.some((r) => r.gameId === parsed.data.gameId)) return "duplicate"; // dedupe by gameId
 
   // newest-first, capped at HISTORY_LIMIT.
   const next = [parsed.data, ...existing].slice(0, HISTORY_LIMIT);
-  return writeHistory(next, store);
+  return writeHistory(next, store) ? "written" : "failed";
 }
 
 export function clearHistory(store?: Storage): void {

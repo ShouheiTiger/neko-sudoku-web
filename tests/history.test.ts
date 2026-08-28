@@ -24,16 +24,16 @@ describe("M3 History storage (§20-§23, §32)", () => {
   });
 
   it("append a completed game then load it", () => {
-    expect(appendHistoryOnce(rec())).toBe(true);
+    expect(appendHistoryOnce(rec())).toBe("written");
     const h = loadHistory();
     expect(h.length).toBe(1);
     expect(h[0]!.gameId).toBe("g1");
   });
 
   it("same gameId appends only once (idempotent §22)", () => {
-    expect(appendHistoryOnce(rec({ gameId: "gX" }))).toBe(true);
-    expect(appendHistoryOnce(rec({ gameId: "gX" }))).toBe(false);
-    expect(appendHistoryOnce(rec({ gameId: "gX" }))).toBe(false);
+    expect(appendHistoryOnce(rec({ gameId: "gX" }))).toBe("written");
+    expect(appendHistoryOnce(rec({ gameId: "gX" }))).toBe("duplicate");
+    expect(appendHistoryOnce(rec({ gameId: "gX" }))).toBe("duplicate");
     expect(loadHistory().filter((r) => r.gameId === "gX").length).toBe(1);
   });
 
@@ -84,7 +84,7 @@ describe("M3 History storage (§20-§23, §32)", () => {
     });
     vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(() => appendHistoryOnce(rec({ gameId: "q" }))).not.toThrow();
-    expect(appendHistoryOnce(rec({ gameId: "q" }))).toBe(false);
+    expect(appendHistoryOnce(rec({ gameId: "q" }))).toBe("failed");
     spy.mockRestore();
   });
 
