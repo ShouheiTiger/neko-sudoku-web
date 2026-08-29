@@ -156,7 +156,7 @@ export function GamePage() {
             data-testid="mode-gentle"
             onClick={() => setErrorMode("gentle")}
           >
-            温柔提醒{errorMode === "gentle" ? " ·" : ""}
+            温柔提醒{errorMode === "gentle" ? "\u00A0·" : ""}
           </button>
           <button
             type="button"
@@ -166,7 +166,7 @@ export function GamePage() {
             data-testid="mode-unchecked"
             onClick={() => setErrorMode("unchecked")}
           >
-            自己检查{errorMode === "unchecked" ? " ·" : ""}
+            自己检查{errorMode === "unchecked" ? "\u00A0·" : ""}
           </button>
         </div>
       </div>
