@@ -13,9 +13,24 @@ export function HelpPage() {
         <button className="link-btn" onClick={() => navigate("/")} aria-label="返回首页">
           ← 返回
         </button>
-        <span className="diff-tag">帮助</span>
+        <span className="diff-tag">怎么玩</span>
         <span style={{ width: 44 }} />
       </div>
+
+      <section className="tutorial-cta" aria-labelledby="tutorial-cta-title">
+        <p className="tutorial-cta-title" id="tutorial-cta-title">
+          <span aria-hidden="true">🐱 </span>第一次玩数独？
+        </p>
+        <p className="tutorial-cta-sub">跟着猫咪一步一步学，很快就会。</p>
+        <button
+          type="button"
+          className="btn btn-soft"
+          data-testid="start-tutorial"
+          onClick={() => navigate("/tutorial")}
+        >
+          开始新手教程
+        </button>
+      </section>
 
       <section className="help-section">
         <h2 className="settings-title">数独规则</h2>

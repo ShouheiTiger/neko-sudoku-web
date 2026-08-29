@@ -46,7 +46,7 @@ export function HomePage() {
       <nav className="home-nav" aria-label="更多">
         <button className="link-btn" onClick={() => navigate("/history")}>历史</button>
         <button className="link-btn" onClick={() => navigate("/settings")}>设置</button>
-        <button className="link-btn" onClick={() => navigate("/tutorial")}>怎么玩</button>
+        <button className="link-btn" onClick={() => navigate("/help")}>怎么玩</button>
       </nav>
       <div className="spacer" />
     </main>

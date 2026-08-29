@@ -86,6 +86,26 @@ body {
   border-color: var(--color-primary-strong);
 }
 
+/* Soft secondary CTA — gentler than btn-primary so it never out-shouts 继续上一局. */
+.btn-soft {
+  background: var(--color-selected);
+  color: var(--color-primary-strong);
+  border-color: var(--color-primary);
+}
+
+/* Help-top tutorial entry: a light rounded card, same warm palette, not a hero/banner. */
+.tutorial-cta {
+  margin: 4px 0 20px;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--color-selected);
+  border: 1px solid var(--color-primary);
+  text-align: center;
+}
+.tutorial-cta-title { margin: 0; font-size: 17px; font-weight: 700; color: var(--color-text); }
+.tutorial-cta-sub { margin: 6px 0 12px; font-size: 15px; line-height: 1.6; color: var(--color-text); }
+.tutorial-cta .btn { width: auto; min-width: 60%; margin: 0 auto; }
+
 .btn-row {
   display: flex;
   gap: 10px;
@@ -431,6 +451,8 @@ body {
 [data-large-text] .history-diff { font-size: 15px; }
 [data-large-text] .help-section p { font-size: 17px; }
 [data-large-text] .help-item-title { font-size: 18px; }
+[data-large-text] .tutorial-cta-title { font-size: 19px; }
+[data-large-text] .tutorial-cta-sub { font-size: 17px; }
 [data-large-text] .tutorial-text { font-size: 20px; }
 [data-large-text] .note-banner { font-size: 15px; }
 [data-large-text] .gentle-toast { font-size: 16px; }

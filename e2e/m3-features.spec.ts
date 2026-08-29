@@ -136,3 +136,29 @@ test("settings and help pages have no horizontal overflow", async ({ page }) => 
   await page.goto("/help");
   expect(await overflow(page)).toBeLessThanOrEqual(1);
 });
+
+// ---- Help/Tutorial navigation wiring (nav fix) ----
+test("home 怎么玩 goes to /help (not /tutorial); help CTA goes to /tutorial; both stay separate", async ({ page }) => {
+  // Home 怎么玩 -> /help
+  await page.goto("/");
+  await page.getByRole("button", { name: "怎么玩" }).click();
+  await expect(page).toHaveURL(/\/help$/);
+  await expect(page.getByRole("heading", { name: "数独规则" })).toBeVisible();
+
+  // Help 开始新手教程 -> /tutorial
+  await page.getByTestId("start-tutorial").click();
+  await expect(page).toHaveURL(/\/tutorial$/);
+  await expect(page.getByTestId("tutorial-rule-0")).toBeVisible();
+
+  // Browser Back: Tutorial -> Help -> Home
+  await page.goBack();
+  await expect(page).toHaveURL(/\/help$/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/(#\/)?$|\/$/);
+
+  // Both routes remain independently renderable (deep route).
+  await page.goto("/help");
+  await expect(page.getByTestId("start-tutorial")).toBeVisible();
+  await page.goto("/tutorial");
+  await expect(page.getByTestId("tutorial-rule-0")).toBeVisible();
+});
