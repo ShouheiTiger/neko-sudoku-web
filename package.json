@@ -7,9 +7,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:pages": "VITE_BASE=/neko-sudoku-web/ vite build && node scripts/prepare-github-pages.mjs",
     "preview": "vite preview",
     "e2e": "playwright test",
+    "e2e:pages": "playwright test --config playwright.pages.config.ts",
     "test": "vitest run",
+    "test:pages": "vitest run --config vitest.pages.config.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "generate:puzzles": "tsx scripts/generate-puzzles.ts",

@@ -1,0 +1,67 @@
+name: Deploy Neko Sudoku to GitHub Pages
+
+# V1 GitHub Pages hosting adapter. First production release is MANUAL ONLY: this workflow never
+# runs on push. The product owner triggers it via Actions -> Run workflow -> main.
+on:
+  workflow_dispatch:
+
+# Least privilege for GitHub Pages deployment via OIDC.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Serialize deployments; do not cancel an in-progress production deploy.
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node major fixed to 20 (same major as the RC regression environment). Not `latest`.
+      # No npm cache: this repo's dependency install is not driven by a committed lockfile
+      # contract this round (NO_LOCKFILE = EXISTING_BACKLOG), so we avoid lockfile-based caching.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      # Build gate — any failure stops the job before upload/deploy.
+      - name: Validate puzzle bank (1200)
+        run: npm run validate:puzzles
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Unit tests (Vitest)
+        run: npm test
+
+      - name: Build for GitHub Pages (base=/neko-sudoku-web/ + 404 fallback)
+        run: npm run build:pages
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact (dist only)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

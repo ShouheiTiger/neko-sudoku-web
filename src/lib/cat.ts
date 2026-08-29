@@ -62,22 +62,16 @@ export function catEmoji(state: CatState): string {
 
 /**
  * Static state → final cat WebP asset mapping (V1 Cat Asset Integration). Local same-origin
- * assets under /cats (Vite publicDir), 512×512 transparent WebP. This is a pure lookup — it
- * does NOT read or influence the Cat state machine, copy, timing, or any hidden signal.
+ * assets under `<base>cats/` (Vite publicDir), 512×512 transparent WebP. This is a pure lookup —
+ * it does NOT read or influence the Cat state machine, copy, timing, or any hidden signal.
+ *
+ * GitHub Pages hosting adapter: the path is prefixed with Vite's BASE_URL so it resolves under the
+ * project site (`/neko-sudoku-web/cats/…`) in production while remaining `/cats/…` in dev and at
+ * the root build (BASE_URL === "/"). The per-state filenames are unchanged.
  */
 export function catAsset(state: CatState): string {
-  switch (state) {
-    case "idle":
-      return "/cats/cat-idle.webp";
-    case "thinking":
-      return "/cats/cat-thinking.webp";
-    case "sleeping":
-      return "/cats/cat-sleeping.webp";
-    case "hinting":
-      return "/cats/cat-hinting.webp";
-    case "celebrating":
-      return "/cats/cat-celebrating.webp";
-  }
+  const base = import.meta.env.BASE_URL; // "/" in dev/root, "/neko-sudoku-web/" on Pages
+  return `${base}cats/cat-${state}.webp`;
 }
 
 /** Default ephemeral state when (re)entering a screen (§10). No persistence. */

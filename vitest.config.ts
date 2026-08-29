@@ -14,7 +14,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
-    // Playwright specs live under e2e/ and must NOT be picked up by Vitest.
-    exclude: ["node_modules/**", "dist/**", "e2e/**"],
+    // Playwright specs live under e2e/ and e2e-pages/ and must NOT be picked up by Vitest.
+    exclude: ["node_modules/**", "dist/**", "e2e/**", "e2e-pages/**", "tests/**/*.pages-test.ts"],
   },
 });
