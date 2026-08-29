@@ -80,6 +80,14 @@ Neko Sudoku 是纯前端应用。
 
 如果发现问题或有建议，欢迎通过 GitHub Issues 提交反馈。
 
+## 开源许可
+
+本项目采用 [MIT License](LICENSE) 开源。
+
+你可以使用、复制、修改和分发本项目，也可以用于商业用途，但需按照 MIT License 的要求保留原版权声明和许可声明。
+
+完整条款请参阅 [LICENSE](LICENSE)。
+
 ---
 
 # 🐱 Neko Sudoku
@@ -159,6 +167,14 @@ This means progress does not automatically sync across devices or browsers, and 
 The source code is public for learning, discussion, and improvement.
 
 If you find a bug or have a suggestion, feel free to open a GitHub Issue.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+You are free to use, copy, modify, distribute, and commercially use the project subject to the terms of the MIT License.
+
+See [LICENSE](LICENSE) for the full license text.
 
 ---
 
