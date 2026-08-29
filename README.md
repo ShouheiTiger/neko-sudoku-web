@@ -8,6 +8,17 @@ Neko Sudoku 面向喜欢慢慢思考的玩家设计，不强调速度、分数�
 
 https://shouheitiger.github.io/neko-sudoku-web/
 
+## 项目截图
+
+<p align="center">
+  <img src="docs/images/screenshot-gameplay.png" alt="Neko Sudoku 游戏界面" width="360">
+  <img src="docs/images/screenshot-hint.png" alt="Neko Sudoku 三层提示界面" width="360">
+</p>
+
+<p align="center">
+  游戏界面 · 三层渐进式提示
+</p>
+
 ## 主要功能
 
 - 4 个难度等级
