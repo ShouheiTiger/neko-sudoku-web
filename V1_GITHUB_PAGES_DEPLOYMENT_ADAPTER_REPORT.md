@@ -6,7 +6,7 @@ History / Puzzle-Bank product logic was modified.
 ## Git
 - Base RC SHA: `1ab7a3f7c5bc8cabb1979a125f5eaf2d1926c4c0`
 - Branch: `feature/v1-github-pages-deploy` (created from the RC)
-- Adapter SHA: `__ADAPTER_SHA__`
+- Adapter SHA: `85deb020c2f5ee74daabb9a1f1fc05d3ecf6e79e`
 
 ## Changed files (adapter scope only)
 | File | Purpose |
