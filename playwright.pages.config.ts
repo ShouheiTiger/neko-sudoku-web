@@ -14,7 +14,7 @@ export default defineConfig({
     viewport: { width: 390, height: 844 },
   },
   webServer: {
-    command: "npm run build:pages && VITE_BASE=/neko-sudoku-web/ npm run preview -- --host 127.0.0.1 --port 4174",
+    command: "npm run build:pages && cross-env VITE_BASE=/neko-sudoku-web/ npm run preview -- --host 127.0.0.1 --port 4174",
     url: "http://127.0.0.1:4174/neko-sudoku-web/",
     reuseExistingServer: false,
     timeout: 180_000,

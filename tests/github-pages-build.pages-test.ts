@@ -14,7 +14,14 @@ const BASE = "/neko-sudoku-web/";
 
 describe("GitHub Pages build adapter (dist under /neko-sudoku-web/)", () => {
   beforeAll(() => {
-    execSync("npm run build:pages", { cwd: ROOT, stdio: "inherit" });
+    // Force production mode for the nested build. Vitest runs with NODE_ENV=test, which would
+    // otherwise be inherited by the child `vite build` and yield a DEVELOPMENT React bundle. We
+    // both override the inherited env AND prefix with cross-env so it is correct on every OS.
+    execSync("cross-env NODE_ENV=production npm run build:pages", {
+      cwd: ROOT,
+      stdio: "inherit",
+      env: { ...process.env, NODE_ENV: "production" },
+    });
   }, 180_000);
 
   it("emits dist/index.html and a byte-identical dist/404.html SPA fallback", () => {

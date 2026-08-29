@@ -16,14 +16,33 @@ History / Puzzle-Bank product logic was modified.
 | `src/lib/cat.ts` | `catAsset()` now base-aware (`${BASE_URL}cats/cat-<state>.webp`); state machine/copy untouched |
 | `src/vite-env.d.ts` | (new) minimal `import.meta.env.BASE_URL` typing — additive, no runtime effect |
 | `scripts/prepare-github-pages.mjs` | (new) copy `dist/index.html` → `dist/404.html`, byte-identical |
-| `package.json` | (new scripts) `build:pages`, `test:pages`, `e2e:pages` |
-| `.github/workflows/deploy-pages.yml` | (new) manual `workflow_dispatch` Pages deploy, dist-only artifact |
-| `tests/github-pages-build.pages-test.ts` | (new) dist artifact verification (base, 404, cats, chunks) |
+| `package.json` | (new scripts) `build:pages`, `test:pages`, `e2e:pages`; (fix) `build:pages` uses `cross-env`; (fix) added `cross-env` devDependency |
+| `package-lock.json` | (fix) updated for the single new devDependency `cross-env` |
+| `.github/workflows/deploy-pages.yml` | (new) manual `workflow_dispatch` Pages deploy, dist-only artifact; (fix) install via `npm ci` + npm cache |
+| `tests/github-pages-build.pages-test.ts` | (new) dist artifact verification (base, 404, cats, chunks); (fix) nested build forced to `NODE_ENV=production` |
 | `vitest.pages.config.ts` | (new) isolated config for the pages build test |
 | `e2e-pages/pages-base.spec.ts` | (new) base-path E2E (routes, cat URLs, chunk 404) |
-| `playwright.pages.config.ts` | (new) isolated config; builds+serves under base |
+| `playwright.pages.config.ts` | (new) isolated config; builds+serves under base; (fix) preview via `cross-env` |
 
 Baseline `vitest.config.ts` gained one exclusion so the pages tests don't run inside `npm test`.
+
+## Fix round (adapter review PASS_WITH_FIXES → 3 fixes)
+1. **Cross-platform VITE_BASE** — added `cross-env` devDependency; `build:pages` and the pages
+   Playwright preview command now use `cross-env VITE_BASE=/neko-sudoku-web/` so the env var is
+   injected identically on POSIX and native Windows shells. `package-lock.json` updated (only
+   `cross-env` added; no other dependency changed/upgraded).
+2. **Production-mode pages build test** — `tests/github-pages-build.pages-test.ts` now runs the
+   nested build as `cross-env NODE_ENV=production npm run build:pages` and overrides the inherited
+   env, so `test:pages` verifies a real production React bundle instead of the dev bundle Vitest's
+   `NODE_ENV=test` would otherwise produce.
+3. **Workflow install** — `.github/workflows/deploy-pages.yml` installs with `npm ci` (lockfile is
+   tracked, `lockfileVersion 3`, valid) and enables npm caching.
+
+**Windows verification note (honest):** this build/CI sandbox is Linux (E2B); a native Windows
+shell was NOT available here, so `build:pages` / `test:pages` / `e2e:pages` could not be executed
+on Windows in this environment. The fix removes the shell dependency at the root cause: `cross-env`
+sets `VITE_BASE`/`NODE_ENV` identically on cmd.exe/PowerShell and POSIX, which is the standard
+cross-platform mechanism. All commands were verified green on Linux via the `cross-env` code path.
 
 ## Adapter parameters
 - **VITE_BASE** = `/neko-sudoku-web/` (set only by `build:pages`; dev / `npm run build` / baseline
@@ -39,16 +58,18 @@ Baseline `vitest.config.ts` gained one exclusion so the pages tests don't run in
 - `.github/workflows/deploy-pages.yml`, trigger `workflow_dispatch` only (no push auto-deploy).
 - Permissions: `contents: read`, `pages: write`, `id-token: write`.
 - Environment `github-pages` with `url: ${{ steps.deployment.outputs.page_url }}`.
-- Build gate before upload: `npm install` → `validate:puzzles` → `tsc --noEmit` → `npm test` →
+- Build gate before upload: `npm ci` → `validate:puzzles` → `tsc --noEmit` → `npm test` →
   `build:pages`. Uploads `./dist` only. Separate `deploy` job needs `build`.
 
 ## Node / lockfile
 - **Node version** pinned to major **20** in the workflow (same major as the RC regression
   environment); not `latest`.
-- Repository note: a `package-lock.json` IS present in the tree, but the deployment adapter does
-  NOT rely on it and does NOT modify/regenerate it. The workflow uses `npm install` (no
-  lockfile-based npm cache), matching the instruction's intent.
-  **NO_LOCKFILE = EXISTING_BACKLOG** (recorded as directed; lockfile handling left untouched.)
+- **LOCKFILE_STATUS = TRACKED_VALID** — `package-lock.json` is tracked, `lockfileVersion = 3`, and
+  consistent with `package.json`; `npm ci` runs successfully against it.
+- **WORKFLOW_INSTALL = npm ci** — the workflow installs with `npm ci` (clean, reproducible,
+  lockfile-exact) and enables npm caching keyed on the lockfile.
+- This fix round adds exactly one devDependency, `cross-env`, and updates `package-lock.json`
+  accordingly; no other dependency was added, removed, or upgraded.
 
 ## Local regression (branch `feature/v1-github-pages-deploy`)
 | Check | Result |

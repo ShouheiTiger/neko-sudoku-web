@@ -24,15 +24,17 @@ jobs:
         uses: actions/checkout@v4
 
       # Node major fixed to 20 (same major as the RC regression environment). Not `latest`.
-      # No npm cache: this repo's dependency install is not driven by a committed lockfile
-      # contract this round (NO_LOCKFILE = EXISTING_BACKLOG), so we avoid lockfile-based caching.
+      # A tracked, valid package-lock.json (lockfileVersion 3, consistent with package.json) is
+      # present, so we install with `npm ci` for a clean, reproducible, lockfile-exact install and
+      # enable npm caching keyed on the lockfile.
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       # Build gate — any failure stops the job before upload/deploy.
       - name: Validate puzzle bank (1200)

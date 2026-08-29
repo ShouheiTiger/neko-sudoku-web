@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:pages": "VITE_BASE=/neko-sudoku-web/ vite build && node scripts/prepare-github-pages.mjs",
+    "build:pages": "cross-env VITE_BASE=/neko-sudoku-web/ vite build && node scripts/prepare-github-pages.mjs",
     "preview": "vite preview",
     "e2e": "playwright test",
     "e2e:pages": "playwright test --config playwright.pages.config.ts",
@@ -27,6 +27,7 @@
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",
+    "cross-env": "^7.0.3",
     "jsdom": "^25.0.1",
     "tsx": "^4.23.5",
     "typescript": "^5.5.4",
