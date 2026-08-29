@@ -391,6 +391,7 @@ body {
 /* ---- Help (§27) ---- */
 .help-section { margin: 16px 0; }
 .help-section p { margin: 4px 0 0; font-size: 15px; line-height: 1.6; color: var(--color-text); }
+.help-item-title { margin: 12px 0 0; font-size: 16px; font-weight: 700; color: var(--color-text); }
 
 /* ---- Tutorial (§25) ---- */
 .tutorial-screen { text-align: center; padding: 8px 0; }
@@ -429,6 +430,7 @@ body {
 [data-large-text] .history-time { font-size: 17px; }
 [data-large-text] .history-diff { font-size: 15px; }
 [data-large-text] .help-section p { font-size: 17px; }
+[data-large-text] .help-item-title { font-size: 18px; }
 [data-large-text] .tutorial-text { font-size: 20px; }
 [data-large-text] .note-banner { font-size: 15px; }
 [data-large-text] .gentle-toast { font-size: 16px; }
