@@ -40,26 +40,32 @@ export function SettingsPage() {
       </section>
 
       <section className="settings-group" aria-labelledby="set-error">
-        <h2 id="set-error" className="settings-title">错误检查方式</h2>
-        <p className="settings-hint">随时可以更改，不影响成绩——这里也没有成绩。</p>
-        <div className="mode-switch mode-switch-block" role="group" aria-label="错误检查方式">
+        <h2 id="set-error" className="settings-title">错误提醒</h2>
+        <p className="settings-hint">
+          {errorMode === "gentle"
+            ? "填错时会轻轻提醒，不记录错误次数。"
+            : "输入后不判断对错，由你自己检查。"}
+        </p>
+        <div className="mode-switch mode-switch-block" role="group" aria-label="错误提醒">
           <button
             type="button"
             className={`mode-opt${errorMode === "gentle" ? " active" : ""}`}
             aria-pressed={errorMode === "gentle"}
+            aria-label="温柔提醒：填错时轻轻提醒，不记录错误次数"
             data-testid="set-mode-gentle"
             onClick={() => setErrorMode("gentle")}
           >
-            温柔提示{errorMode === "gentle" ? "（已选）" : ""}
+            温柔提醒{errorMode === "gentle" ? "（已选）" : ""}
           </button>
           <button
             type="button"
             className={`mode-opt${errorMode === "unchecked" ? " active" : ""}`}
             aria-pressed={errorMode === "unchecked"}
+            aria-label="自己检查：输入后不判断对错，像纸上数独一样自己检查"
             data-testid="set-mode-unchecked"
             onClick={() => setErrorMode("unchecked")}
           >
-            不检查{errorMode === "unchecked" ? "（已选）" : ""}
+            自己检查{errorMode === "unchecked" ? "（已选）" : ""}
           </button>
         </div>
       </section>

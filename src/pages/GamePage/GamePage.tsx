@@ -147,24 +147,26 @@ export function GamePage() {
           ← 首页
         </button>
         <span className="diff-tag">{DIFFICULTY_NAME[game.difficulty]}</span>
-        <div className="mode-switch" role="group" aria-label="错误检查方式">
+        <div className="mode-switch" role="group" aria-label="错误提醒">
           <button
             type="button"
             className={`mode-opt${errorMode === "gentle" ? " active" : ""}`}
             aria-pressed={errorMode === "gentle"}
+            aria-label="温柔提醒：填错时轻轻提醒，不记录错误次数"
             data-testid="mode-gentle"
             onClick={() => setErrorMode("gentle")}
           >
-            温柔{errorMode === "gentle" ? " ·" : ""}
+            温柔提醒{errorMode === "gentle" ? " ·" : ""}
           </button>
           <button
             type="button"
             className={`mode-opt${errorMode === "unchecked" ? " active" : ""}`}
             aria-pressed={errorMode === "unchecked"}
+            aria-label="自己检查：输入后不判断对错，由你自己检查"
             data-testid="mode-unchecked"
             onClick={() => setErrorMode("unchecked")}
           >
-            不检查{errorMode === "unchecked" ? " ·" : ""}
+            自己检查{errorMode === "unchecked" ? " ·" : ""}
           </button>
         </div>
       </div>

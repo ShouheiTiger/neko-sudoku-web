@@ -40,8 +40,8 @@ export function HelpPage() {
       </section>
 
       <section className="help-section">
-        <h2 className="settings-title">两种错误检查</h2>
-        <p>「温柔提示」会在填错时轻声提醒，不计错、不结束游戏；「不检查」则允许你先随意尝试。</p>
+        <h2 className="settings-title">两种错误提醒</h2>
+        <p>「温柔提醒」会在填错时轻轻提醒，不记录错误次数、不结束游戏；「自己检查」则输入后不判断对错，像纸上数独一样由你自己检查。</p>
       </section>
 
       <section className="help-section">

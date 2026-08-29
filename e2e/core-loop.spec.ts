@@ -32,8 +32,8 @@ test("core loop: start, input, refresh keeps the number", async ({ page }) => {
   });
   expect(emptyIndex).toBeGreaterThanOrEqual(0);
 
-  // Default mode is "gentle" (§11): a wrong digit is rejected. Switch to "不检查" so any
-  // digit commits, then prove it persists across a refresh.
+  // Default mode is "gentle" (§11): a wrong digit is rejected. Switch to "自己检查" (unchecked) so
+  // any digit commits, then prove it persists across a refresh.
   await page.getByTestId("mode-unchecked").click();
   await page.getByTestId(`cell-${emptyIndex}`).click();
   await page.getByTestId("pad-7").click();
