@@ -152,10 +152,12 @@ body {
 .cell.peer { background: var(--color-peer); }
 .cell.selected { background: var(--color-selected); outline: 2px solid var(--color-primary-strong); outline-offset: -2px; z-index: 1; }
 
-/* thick 3x3 box borders */
-.cell.box-right { box-shadow: 1.5px 0 0 0 var(--color-grid-strong); }
-.cell.box-bottom { box-shadow: 0 1.5px 0 0 var(--color-grid-strong); }
-.cell.box-right.box-bottom { box-shadow: 1.5px 0 0 0 var(--color-grid-strong), 0 1.5px 0 0 var(--color-grid-strong); }
+/* thick 3x3 box borders — clearly stronger than the 1px inter-cell gap so the nine
+   fixed 3x3 boxes are distinguishable at a glance (UX-01). Uses the same warm grid
+   colour (no new palette / no per-box background) to stay gentle. */
+.cell.box-right { box-shadow: 3px 0 0 0 var(--color-grid-strong); }
+.cell.box-bottom { box-shadow: 0 3px 0 0 var(--color-grid-strong); }
+.cell.box-right.box-bottom { box-shadow: 3px 0 0 0 var(--color-grid-strong), 0 3px 0 0 var(--color-grid-strong); }
 
 /* ---------- Number pad ---------- */
 .pad {
@@ -228,12 +230,12 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  width: 100%; height: 100%; padding: 1px;
+  width: 100%; height: 100%; padding: 0;
 }
 .cell .note-cell {
   display: flex; align-items: center; justify-content: center;
-  font-size: clamp(7px, 2.3vw, 11px);
-  font-weight: 500; color: var(--color-muted); line-height: 1;
+  font-size: clamp(9px, 3vw, 13px);
+  font-weight: 600; color: var(--color-text); line-height: 1;
 }
 
 /* conflict styling (unchecked mode, §12) — light, non-blocking */
@@ -458,8 +460,9 @@ body {
 [data-large-text] .gentle-toast { font-size: 16px; }
 /* Board digit: bolder + a touch larger, still bounded so it never overflows a cell. */
 [data-large-text] .cell .cell-value { font-weight: 800; font-size: clamp(18px, 6vw, 28px); }
-/* Notes stay a readable 1-9 grid (§16) — bump weight/contrast, never dots. */
-[data-large-text] .cell .note-cell { font-weight: 700; color: var(--color-text); }
+/* Notes stay a readable 1-9 grid (§16) — Large Text must also make notes materially
+   bigger (not just bolder), while staying well below the entered-digit size. UX-02 §5.3. */
+[data-large-text] .cell .note-cell { font-size: clamp(10px, 3.4vw, 15px); font-weight: 700; color: var(--color-text); }
 
 /* V1 Release Prep — production bank loading / error UI (§45). */
 .loading-note { text-align: center; color: var(--color-muted); margin-top: 16px; }
