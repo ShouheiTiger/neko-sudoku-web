@@ -33,8 +33,23 @@ async function fillNotes(page: Page, cellIdx: number, digits: number[]) {
   for (const d of digits) await page.getByTestId(`pad-${d}`).click();
 }
 
+function normalizedShadow(shadow: string) {
+  return shadow.replace(/\s+/g, " ");
+}
+
+function expectInsetSeparator(shadow: string, axis: "horizontal" | "vertical") {
+  const normalized = normalizedShadow(shadow);
+  expect(normalized).toContain("inset");
+  expect(normalized).toContain("3px");
+  if (axis === "vertical") {
+    expect(normalized).toMatch(/-3px 0px 0px 0px.*inset|inset -3px 0px 0px 0px/);
+  } else {
+    expect(normalized).toMatch(/0px -3px 0px 0px.*inset|inset 0px -3px 0px 0px/);
+  }
+}
+
 // ---- TEST A: 3x3 box boundary is visually stronger than an ordinary internal cell ----
-test("UX-01 box boundaries (col 3/6, row 3/6) are stronger than ordinary cells", async ({ page }) => {
+test("UX-01 box boundaries (col 3/6, row 3/6) are inset and stronger than ordinary cells", async ({ page }) => {
   await startGame(page);
   // box-right lives on col index 2 and 5 (0-based) -> cells 2, 5 in row 0.
   // box-bottom lives on row index 2 and 5 -> cells 18, 45 in col 0.
@@ -45,6 +60,7 @@ test("UX-01 box boundaries (col 3/6, row 3/6) are stronger than ordinary cells",
   const c5 = await shadow(5); // col6/7 boundary
   const r18 = await shadow(18); // row3/4 boundary (index 18 = row2,col0)
   const r45 = await shadow(45); // row6/7 boundary (index 45 = row5,col0)
+  const cross = await shadow(20); // row3/4 + col3/4 intersection
   const ordinary = await shadow(0); // top-left ordinary cell (no box-right/bottom)
   const ordinary2 = await shadow(1);
 
@@ -55,8 +71,15 @@ test("UX-01 box boundaries (col 3/6, row 3/6) are stronger than ordinary cells",
   expect(ordinary === "none" || ordinary === "").toBeTruthy();
   expect(ordinary2 === "none" || ordinary2 === "").toBeTruthy();
 
-  // The declared box border width is >= 3px (clearly stronger than the 1px inter-cell gap).
-  expect(c2).toContain("3px");
+  // Regression for the horizontal-boundary bug: separators must be drawn inside the
+  // owning cell, not outward where the next row can cover the shadow.
+  expectInsetSeparator(c2, "vertical");
+  expectInsetSeparator(c5, "vertical");
+  expectInsetSeparator(r18, "horizontal");
+  expectInsetSeparator(r45, "horizontal");
+  expect(normalizedShadow(cross).match(/inset/g)?.length).toBe(2);
+  expectInsetSeparator(cross, "vertical");
+  expectInsetSeparator(cross, "horizontal");
 
   // Outer board border must render strictly stronger than the 3px 3x3 box boundary.
   // Declared 4px; read the real Chromium computed border-width and compare as a number.

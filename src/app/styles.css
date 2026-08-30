@@ -152,12 +152,11 @@ body {
 .cell.peer { background: var(--color-peer); }
 .cell.selected { background: var(--color-selected); outline: 2px solid var(--color-primary-strong); outline-offset: -2px; z-index: 1; }
 
-/* thick 3x3 box borders — clearly stronger than the 1px inter-cell gap so the nine
-   fixed 3x3 boxes are distinguishable at a glance (UX-01). Uses the same warm grid
-   colour (no new palette / no per-box background) to stay gentle. */
-.cell.box-right { box-shadow: 3px 0 0 0 var(--color-grid-strong); }
-.cell.box-bottom { box-shadow: 0 3px 0 0 var(--color-grid-strong); }
-.cell.box-right.box-bottom { box-shadow: 3px 0 0 0 var(--color-grid-strong), 0 3px 0 0 var(--color-grid-strong); }
+/* thick 3x3 box borders — inset so later grid cells cannot paint over horizontal
+   separators. Uses the same warm grid colour to stay gentle. */
+.cell.box-right { box-shadow: inset -3px 0 0 0 var(--color-grid-strong); }
+.cell.box-bottom { box-shadow: inset 0 -3px 0 0 var(--color-grid-strong); }
+.cell.box-right.box-bottom { box-shadow: inset -3px 0 0 0 var(--color-grid-strong), inset 0 -3px 0 0 var(--color-grid-strong); }
 
 /* ---------- Number pad ---------- */
 .pad {
