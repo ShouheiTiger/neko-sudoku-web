@@ -58,11 +58,10 @@ test("UX-01 box boundaries (col 3/6, row 3/6) are stronger than ordinary cells",
   // The declared box border width is >= 3px (clearly stronger than the 1px inter-cell gap).
   expect(c2).toContain("3px");
 
-  // Outer board border must render at least as strong as the 3px 3x3 box boundary.
-  // NOTE: declared 3.5px; under dpr=1 (this test environment) Chromium rounds the
-  // computed border-width down to an integer device pixel (3px), so we assert >= 3.
+  // Outer board border must render strictly stronger than the 3px 3x3 box boundary.
+  // Declared 4px; read the real Chromium computed border-width and compare as a number.
   const outer = await page.locator(".board").evaluate((el) => parseFloat(getComputedStyle(el).borderTopWidth));
-  expect(outer).toBeGreaterThanOrEqual(3);
+  expect(outer).toBeGreaterThan(3);
 });
 
 // ---- TEST B/C: notes 1-9 all present in fixed 3x3 slots; 2/5/8 fixed positions ----
