@@ -128,7 +128,7 @@ body {
   grid-template-columns: repeat(9, 1fr);
   grid-template-rows: repeat(9, 1fr);
   background: var(--color-grid-strong);
-  border: 2.5px solid var(--color-grid-strong);
+  border: 3.5px solid var(--color-grid-strong);
   border-radius: 8px;
   overflow: hidden;
   gap: 1px;
